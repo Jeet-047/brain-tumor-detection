@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Tumor Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .gallery-container {
+            flex: 0 0 300px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .gallery-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .gallery-image {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .gallery-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .prediction-container {
+            flex-grow: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .main-image {
+            max-width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container">
+        <!-- Left Side: Image Gallery -->
+        <div class="gallery-container">
+            <h2 class="text-xl font-bold mb-4 text-center">Image Gallery</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-4">
+                {% if image_filenames %}
+                    {% for src in image_filenames %}
+                        <div class="gallery-item">
+                            <img src="{{ url_for('static', filename='images/' + src.split('/')[-1]) }}" 
+                                 alt="Default image" 
+                                 class="gallery-image rounded-lg"
+                                 data-src="{{ url_for('static', filename='images/' + src.split('/')[-1]) }}">
+                            <p class="mt-1 text-sm font-semibold capitalize">
+                                Actual: {{ src.split('/')[-1].split('.')[0].replace('default_', '') | replace('_', ' ') }}
+                            </p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 text-sm text-center col-span-2">No images uploaded yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Choose Image button is now in the gallery section -->
+            <div class="mt-6 flex flex-col items-center">
+                <label for="file-upload" class="cursor-pointer bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-lg">
+                    <span id="upload-button-text">Upload New Image</span>
+                </label>
+                <input id="file-upload" type="file" name="file" accept="image/*" class="hidden">
+            </div>
+        </div>
+
+        <!-- Right Side: Upload and Prediction -->
+        <div class="prediction-container">
+            <h1 class="text-3xl font-bold mb-6 text-gray-700">Brain Tumor Classification</h1>
+            <p class="text-gray-500 mb-8 max-w-lg text-center">
+                Choose an image from the gallery or upload a new one to classify it as glioma, meningioma, pituitary tumor, or no tumor.
+            </p>
+
+            <!-- Image display area -->
+            <img id="main-image" src="https://placehold.co/400x400/e2e8f0/64748b?text=Select+an+Image" alt="Main Image" class="main-image mb-8">
+
+            <!-- Loading indicator -->
+            <div id="loading" class="hidden my-4">
+                <div class="loading-spinner"></div>
+                <p class="mt-2 text-blue-500 font-semibold">Analyzing image...</p>
+            </div>
+
+            <!-- Result display area -->
+            <div id="result-area" class="text-center p-6 rounded-xl shadow-lg bg-white hidden w-full max-w-sm transition-all duration-300">
+                <h3 class="text-xl font-semibold mb-2">Prediction</h3>
+                <p class="text-3xl font-bold text-blue-600 capitalize" id="prediction-label"></p>
+            </div>
+            
+            <div id="error-message" class="text-red-500 mt-4 text-center font-medium hidden"></div>
+
+            <!-- Upload form -->
+            <form id="upload-form" class="mt-8 bg-white p-6 rounded-xl shadow-md w-full max-w-sm flex flex-col items-center">
+                <!-- The file input is now in the gallery, but the form will still handle the submission -->
+                <button type="submit" class="w-full bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-lg">
+                    Predict Tumor
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const galleryImages = document.querySelectorAll('.gallery-image');
+        const mainImage = document.getElementById('main-image');
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-upload');
+        const loadingDiv = document.getElementById('loading');
+        const resultArea = document.getElementById('result-area');
+        const predictionLabel = document.getElementById('prediction-label');
+        const errorMessageDiv = document.getElementById('error-message');
+        const uploadButtonText = document.getElementById('upload-button-text');
+        
+        let selectedFile = null;
+        let selectedGalleryImage = null; // New variable to track gallery selection
+
+        // Handle gallery image clicks
+        galleryImages.forEach(img => {
+            img.addEventListener('click', () => {
+                const src = img.getAttribute('data-src');
+                mainImage.src = src;
+                
+                // Set the gallery image state
+                selectedGalleryImage = src;
+                
+                // Clear any previous results or errors
+                resultArea.classList.add('hidden');
+                errorMessageDiv.classList.add('hidden');
+                // Clear the file input and selected file
+                fileInput.value = '';
+                selectedFile = null;
+                uploadButtonText.textContent = 'Upload New Image';
+            });
+        });
+
+        // Update button text and display image preview when a file is selected
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileUrl = URL.createObjectURL(file);
+                mainImage.src = fileUrl;
+                uploadButtonText.textContent = file.name;
+                selectedFile = file;
+                
+                // Clear the gallery image state
+                selectedGalleryImage = null;
+
+                // Clear any previous results or errors
+                resultArea.classList.add('hidden');
+                errorMessageDiv.classList.add('hidden');
+            } else {
+                uploadButtonText.textContent = 'Upload New Image';
+                selectedFile = null;
+            }
+        });
+
+        // Handle form submission with fetch API
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            loadingDiv.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            errorMessageDiv.classList.add('hidden');
+
+            const formData = new FormData();
+
+            if (selectedFile) {
+                // If a new file was chosen, use it for prediction
+                formData.append('file', selectedFile);
+            } else if (selectedGalleryImage) {
+                // If a gallery image is selected, send its filename for prediction
+                const filename = selectedGalleryImage.split('/').pop();
+                formData.append('filename', `static/images/${filename}`);
+            } else {
+                // No image selected
+                loadingDiv.classList.add('hidden');
+                errorMessageDiv.textContent = 'Please select a file or an image from the gallery to upload.';
+                errorMessageDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Prediction failed.');
+                }
+
+                const data = await response.json();
+                
+                // Hide loading and show result
+                loadingDiv.classList.add('hidden');
+                
+                predictionLabel.textContent = data.prediction;
+                resultArea.classList.remove('hidden');
+
+            } catch (error) {
+                loadingDiv.classList.add('hidden');
+                errorMessageDiv.textContent = `Error: ${error.message}`;
+                errorMessageDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>
