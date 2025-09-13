@@ -15,13 +15,27 @@
         .container {
             display: flex;
             min-height: 100vh;
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
         }
         .gallery-container {
-            flex: 0 0 300px;
+            flex-shrink: 0;
+            width: 100%;
             background-color: #ffffff;
-            border-right: 1px solid #e5e7eb;
-            overflow-y: auto;
+            border-bottom: 1px solid #e5e7eb;
             padding: 1rem;
+        }
+        @media (min-width: 768px) {
+            .gallery-container {
+                width: 300px;
+                border-right: 1px solid #e5e7eb;
+                border-bottom: none;
+                overflow-y: auto;
+            }
         }
         .gallery-item {
             display: flex;
@@ -41,11 +55,16 @@
         }
         .prediction-container {
             flex-grow: 1;
-            padding: 2rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .prediction-container {
+                padding: 2rem;
+            }
         }
         .main-image {
             max-width: 100%;
@@ -74,7 +93,7 @@
         <!-- Left Side: Image Gallery -->
         <div class="gallery-container">
             <h2 class="text-xl font-bold mb-4 text-center">Image Gallery</h2>
-            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 {% if image_filenames %}
                     {% for src in image_filenames %}
                         <div class="gallery-item">
@@ -103,7 +122,7 @@
 
         <!-- Right Side: Upload and Prediction -->
         <div class="prediction-container">
-            <h1 class="text-3xl font-bold mb-6 text-gray-700">Brain Tumor Classification</h1>
+            <h1 class="text-3xl font-bold mb-6 text-gray-700 text-center">Brain Tumor Classification</h1>
             <p class="text-gray-500 mb-8 max-w-lg text-center">
                 Choose an image from the gallery or upload a new one to classify it as glioma, meningioma, pituitary tumor, or no tumor.
             </p>
