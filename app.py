@@ -103,4 +103,4 @@ def predict():
         return jsonify({"error": "Model not loaded or file not provided."}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
