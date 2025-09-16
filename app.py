@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from tensorflow import keras
+import tensorflow as tf
 from keras.utils import load_img, img_to_array
 import urllib.request
 import numpy as np
@@ -25,11 +25,16 @@ else:
 
 # Load model once at startup
 try:
-    model = keras.models.load_model(MODEL_PATH)
+    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+    interpreter.allocate_tensors()
     print("Model loaded successfully.")
 except Exception as e:
     print(f"Error loading model: {e}")
-    model = None
+    interpreter = None
+
+# Get input & output details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 # Define class labels
 class_labels = ["glioma", "meningioma", "notumor", "pituitary"]
@@ -82,16 +87,16 @@ def predict():
         # Preprocess image directly from the in-memory stream
         img = load_img(img_stream, target_size=(224, 224))
         
-    if img and model:
+    if img and interpreter:
         try:
             img_array = img_to_array(img) / 255.0
             img_array = np.expand_dims(img_array, axis=0)
 
             # Predict
-            preds = model.predict(img_array)
-            pred_class = np.argmax(preds, axis=1)[0]
-            pred_label = class_labels[pred_class]
-
+            interpreter.set_tensor(input_details[0]["index"], img_array)
+            interpreter.invoke()
+            output_data = interpreter.get_tensor(output_details[0]['index'])
+            pred_label = class_labels[np.argmax(output_data)]
             return jsonify({
                 "prediction": pred_label,
             }), 200

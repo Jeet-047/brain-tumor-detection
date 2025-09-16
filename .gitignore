@@ -1,3 +1,6 @@
 env
 brain_tumor.keras
 __pycache__/
+brain_tumor_lite.tflite
+reduce_model_size.py
+test_tflite_model.py
