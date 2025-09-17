@@ -1,3 +1,12 @@
+<p>
+  <h2 style="font-size:25px;">Test My Model 👉
+   <a href="https://brain-tumor-detection-jeet.onrender.com" target="_blank">
+       Brain Tumor Detection App
+   </a></h2>
+</p>
+
+---
+
 # 🧠 Brain Tumor Detection
 
 A deep learning-powered web application for automatic brain tumor classification from MRI images.  
