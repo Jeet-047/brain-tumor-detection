@@ -79,7 +79,6 @@
             transition: color 0.3s;
         }
         .social-link:hover {
-            /* Tailwind blue-600 */
             color: #2563eb;
         }
         .main-image {
@@ -101,11 +100,76 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .dropdown-menu {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+            transform: translateY(10px);
+            opacity: 0;
+            pointer-events: none;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .dropdown-menu.active {
+            opacity: 1;
+            transform: translateY(0) translateX(-50%);
+            pointer-events: auto;
+        }
+        /* Mobile-specific adjustments for smaller screens */
+        @media (max-width: 430px) {
+            .navbar-title {
+                font-size: small;
+            }
+            .projects-button {
+                padding-top: 0.2rem;
+                padding-bottom: 0.2rem;
+                padding-left: 0.4rem;
+                padding-right: 0.4rem;
+                font-size: xx-small;
+            }
+            .projects-button-text {
+                font-size: xx-small;
+            }
+            .dropdown-menu {
+                width: 140px; /* Reduced width for the dropdown menu */
+            }
+            .dropdown-menu a {
+                font-size: x-small; /* Reduced font size for dropdown links */
+            }
+        }
+        /* Pulse animation for the button */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .pulse-animation {
+            animation: pulse 1s infinite;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-
-    <div class="container">
+    <!-- Navigation Bar -->
+    <nav class="bg-white/80 backdrop-blur-md p-4 fixed top-0 inset-x-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Left side: Logo and Title -->
+            <div class="flex items-center space-x-2">
+                <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="Logo" class="h-8 w-8 rounded-full">
+                <span class="text-l font-bold text-gray-800 navbar-title">Brain Tumor Detection</span>
+            </div>
+            <!-- Right side: Explore Projects Dropdown -->
+            <div class="relative">
+                <button id="projects-dropdown-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 projects-button pulse-animation">
+                    <span class="text-l projects-button-text">Explore My Projects</span>
+                </button>
+                <div id="projects-dropdown-menu" class="dropdown-menu absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                    <a href="https://heart-disease-detection-jeet.onrender.com" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200">Heart Disease Detection</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-20">
         <!-- Left Side: Image Gallery -->
         <div class="gallery-container">
             <h2 class="text-xl font-bold mb-4 text-center">Image Gallery</h2>
@@ -200,6 +264,8 @@
         const errorMessageDiv = document.getElementById('error-message');
         const uploadButtonText = document.getElementById('upload-button-text');
         const predictionSection = document.getElementById('prediction-section');
+        const projectsDropdownBtn = document.getElementById('projects-dropdown-btn');
+        const projectsDropdownMenu = document.getElementById('projects-dropdown-menu');
         
         let selectedFile = null;
         let selectedGalleryImage = null;
@@ -294,6 +360,17 @@
                 loadingDiv.classList.add('hidden');
                 errorMessageDiv.textContent = `Error: ${error.message}`;
                 errorMessageDiv.classList.remove('hidden');
+            }
+        });
+
+        // Dropdown menu logic
+        projectsDropdownBtn.addEventListener('click', () => {
+            projectsDropdownMenu.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!projectsDropdownBtn.contains(e.target) && !projectsDropdownMenu.contains(e.target)) {
+                projectsDropdownMenu.classList.remove('active');
             }
         });
     </script>

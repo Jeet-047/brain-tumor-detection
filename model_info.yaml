@@ -1,2 +1,7 @@
 MODEL_URL: "https://github.com/Jeet-047/brain-tumor-detection/releases/download/BT1.0.0/brain_tumor_lite.tflite"
 MODEL_PATH: "brain_tumor_lite.tflite"
+
+# Add other app under URLs section
+URLS: {
+  HEART_DISEASE_APP: "https://heart-disease-detection-jeet.onrender.com"
+}

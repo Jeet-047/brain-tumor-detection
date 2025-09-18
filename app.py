@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import tensorflow as tf
 from keras.utils import load_img, img_to_array
 import urllib.request
+import threading
 import numpy as np
 import os
 from io import BytesIO
@@ -9,6 +10,31 @@ import yaml
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Global flag to ensure wake-up runs only once
+wake_up_ran = False
+
+def wake_up_other_apps():
+    model_info = {}
+    with open("model_info.yaml", "r") as f:
+        model_info = yaml.safe_load(f)
+    
+    urls = model_info.get("URLS", {})
+    for app_name, url in urls.items():
+        try:
+            print(f"Waking up {app_name} at {url}")
+            urllib.request.urlopen(url, timeout=120)
+            print(f"{app_name} is awake!")
+        except Exception as e:
+            print(f"Failed to wake up {app_name}: {e}")
+
+@app.before_request
+def trigger_wake_up():
+    global wake_up_ran
+    if not wake_up_ran:
+        wake_up_ran = True
+        # run wake up in a background thread so the request is not slowed down
+        threading.Thread(target=wake_up_other_apps, daemon=True).start()
 
 # Load model info from YAML
 with open("model_info.yaml", "r") as f:
