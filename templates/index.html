@@ -269,6 +269,9 @@
         
         let selectedFile = null;
         let selectedGalleryImage = null;
+        let touchstartX = 0;
+        let touchstartY = 0;
+        const TOUCH_THRESHOLD = 10; // Pixels
 
         const handleImageSelection = (imgSrc) => {
             mainImage.src = imgSrc;
@@ -291,10 +294,20 @@
                 handleImageSelection(src);
             });
             img.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const src = img.getAttribute('data-src');
-                handleImageSelection(src);
-            });
+                touchstartX = e.touches[0].clientX;
+                touchstartY = e.touches[0].clientY;
+            }, false);
+            img.addEventListener('touchend', (e) => {
+                const touchendX = e.changedTouches[0].clientX;
+                const touchendY = e.changedTouches[0].clientY;
+                const distMovedX = Math.abs(touchendX - touchstartX);
+                const distMovedY = Math.abs(touchendY - touchstartY);
+                
+                if (distMovedX < TOUCH_THRESHOLD && distMovedY < TOUCH_THRESHOLD) {
+                    const src = img.getAttribute('data-src');
+                    handleImageSelection(src);
+                }
+            }, false);
         });
 
         fileInput.addEventListener('change', () => {
@@ -310,7 +323,7 @@
                 
                 // Scroll to the prediction section on mobile
                 if (window.innerWidth < 768) {
-                    predictionSection.scroll-into-view({ behavior: 'smooth' });
+                    predictionSection.scrollIntoView({ behavior: 'smooth' });
                 }
             } else {
                 uploadButtonText.textContent = 'Upload New Image';
